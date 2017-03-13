@@ -8,25 +8,61 @@ import {
 const backgroundErrPrefix = '\nLooks like there is an error in the background page. ' +
   'You might want to inspect your background page for more details.\n';
 
+class PortStateListener
+{
+  constructor({portName, extensionId = ''}) {
+    if (!portName) {
+      throw new Error('portName is required in options');
+    }
+    this.portName = portName;    
+    this.extensionId = extensionId; //keep the extensionId as an instance variable
+    this.addListener = this.addListener.bind(this);
+  }
+  addListener(callback) {
+    if (!this.port) {
+      this.port = chrome.runtime.connect(this.extensionId, {name: this.portName});
+    }
+    this.port.onMessage.addListener(callback);
+  }
+}
+
+class RuntimeSendMessageDispatchSender {
+  constructor({extensionId = ''}) {
+    this.extensionId = extensionId;
+    this.sendMessage = this.sendMessage.bind(this);
+  }
+  sendMessage(message, callback) {
+    chrome.runtime.sendMessage(this.extensionId, message, callback);
+  }
+}
+
 class Store {
   /**
    * Creates a new Proxy store
    * @param  {object} options An object of form {portName, state, extensionId}, where `portName` is a required string and defines the name of the port for state transition changes, `state` is the initial state of this store (default `{}`) `extensionId` is the extension id as defined by chrome when extension is loaded (default `''`)
    */
-  constructor({portName, state = {}, extensionId = ''}) {
-    if (!portName) {
-      throw new Error('portName is required in options');
+  constructor({portName, state = {}, extensionId = '', stateListener, dispatchSender}) {
+
+    // set stateListener if not provided
+    if (!stateListener) {
+      stateListener = new PortStateListener({portName, extensionId});
     }
+
+    // set dispatchSender if not provided
+    if (!dispatchSender) {
+      dispatchSender = new RuntimeSendMessageDispatchSender({extensionId});
+    }
+    this.dispatchSender = dispatchSender;
 
     this.readyResolved = false;
     this.readyPromise = new Promise(resolve => this.readyResolve = resolve);
 
     this.extensionId = extensionId; //keep the extensionId as an instance variable
-    this.port = chrome.runtime.connect(this.extensionId, {name: portName});
+
     this.listeners = [];
     this.state = state;
 
-    this.port.onMessage.addListener((message) => {
+    stateListener.addListener((message) => {
       if (message.type === STATE_TYPE) {
         this.replaceState(message.payload);
 
@@ -91,9 +127,7 @@ class Store {
    */
   dispatch(data) {
     return new Promise((resolve, reject) => {
-      chrome.runtime.sendMessage(
-        this.extensionId,
-      {
+      this.dispatchSender.sendMessage({
         type: DISPATCH_TYPE,
         payload: data
       }, (resp) => {
