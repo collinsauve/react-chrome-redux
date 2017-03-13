@@ -5,36 +5,10 @@ import {
   STATE_TYPE
 } from '../constants';
 
+import {RuntimePortMessageListener, RuntimeSendMessageSender} from '../message-passing/messagePassing';
+
 const backgroundErrPrefix = '\nLooks like there is an error in the background page. ' +
   'You might want to inspect your background page for more details.\n';
-
-class PortStateListener
-{
-  constructor({portName, extensionId = ''}) {
-    if (!portName) {
-      throw new Error('portName is required in options');
-    }
-    this.portName = portName;    
-    this.extensionId = extensionId; //keep the extensionId as an instance variable
-    this.addListener = this.addListener.bind(this);
-  }
-  addListener(callback) {
-    if (!this.port) {
-      this.port = chrome.runtime.connect(this.extensionId, {name: this.portName});
-    }
-    this.port.onMessage.addListener(callback);
-  }
-}
-
-class RuntimeSendMessageDispatchSender {
-  constructor({extensionId = ''}) {
-    this.extensionId = extensionId;
-    this.sendMessage = this.sendMessage.bind(this);
-  }
-  sendMessage(message, callback) {
-    chrome.runtime.sendMessage(this.extensionId, message, callback);
-  }
-}
 
 class Store {
   /**
@@ -45,12 +19,12 @@ class Store {
 
     // set stateListener if not provided
     if (!stateListener) {
-      stateListener = new PortStateListener({portName, extensionId});
+      stateListener = new RuntimePortMessageListener({portName, extensionId});
     }
 
     // set dispatchSender if not provided
     if (!dispatchSender) {
-      dispatchSender = new RuntimeSendMessageDispatchSender({extensionId});
+      dispatchSender = new RuntimeSendMessageSender({extensionId});
     }
     this.dispatchSender = dispatchSender;
 
