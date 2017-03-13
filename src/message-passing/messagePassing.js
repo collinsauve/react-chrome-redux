@@ -59,6 +59,16 @@ export class RuntimeOnMessageExternalListener {
 }
 
 /**
+ * A MessageListener that uses window.addEventListener('message', ...)
+ */
+export class WindowMessageListener {
+  //TODO: Perhaps we should allow specifying a message origin filter?
+  addListener(callback) {
+    window.addEventListener('message', callback);
+  }
+}
+
+/**
  * A MessageListener that combines other MessageListeners
  */
 export class CombiningMessageListener {
@@ -90,6 +100,24 @@ export class RuntimeSendMessageSender {
   }
 }
 
+/**
+ * A MessageSender that uses parent.postMessage
+ **/
+export class WindowPostMessageSender {
+  constructor({targetWindow, targetOrigin="*"}) {
+    if (!targetWindow) {
+      throw new Error('targetWindow is required in options');
+    }
+    this.targetWindow = targetWindow;
+    this.targetOrigin = targetOrigin;
+    this.sendMessage = this.sendMessage.bind(this);
+  }
+  sendMessage(message, callback) {
+    //TODO: callback isn't used.  What is the impact?
+    this.targetWindow.postMessage(message);
+  }
+}
+
 
 
 // StoreSubscription implementations
@@ -98,9 +126,9 @@ export class RuntimeSendMessageSender {
 /**
  * currys the sender function into a function that can actually send the state
  */
-const sendState = (sender) => {
+const setupSendState = (sender) => {
     return (state) => {
-      sender.postMessage({
+      sender({
         type: STATE_TYPE,
         payload: state
       });
@@ -117,7 +145,8 @@ const portNameFilterConnectState = (portName, store) => {
     }
 
     // Send new state down connected port on every redux store state change
-    const unsubscribe = store.subscribe(sendState(port.postMessage));
+    const sendState = setupSendState(port.postMessage);
+    const unsubscribe = store.subscribe(sendState);
 
     // when the port disconnects, unsubscribe the sendState listener
     port.onDisconnect.addListener(unsubscribe);
@@ -174,16 +203,21 @@ export class RuntimeExternalPortStoreSubscription {
 }
 
 /**
- * StoreSubscription that uses chrome.runtime.sendMessage
+ * StoreSubscription that uses frame.contentWindow.postMessage
  */
-export class RuntimeSendMessageStoreSubscription {
+export class WindowPostMessageStoreSubscription {
 
-  constructor() {
+  constructor({targetWindow, targetOrigin = "*"}) {
+    if (!targetWindow) {
+      throw new Error('targetWindow is required in options');
+    }
+    this.targetWindow = targetWindow;
+    this.targetOrigin = targetOrigin;
     this.wrapStore = this.wrapStore.bind(this);
   }
 
   wrapStore(store) {
-    store.subscribe(sendState(chrome.runtime.sendMessage));
+    store.subscribe(setupSendState(message => this.targetWindow.postMessage(message, this.targetOrigin)));
   }
 }
 
