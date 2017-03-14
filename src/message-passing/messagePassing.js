@@ -1,3 +1,7 @@
+import {
+  DISPATCH_TYPE,
+  STATE_TYPE
+} from '../constants';
 
 /**
  * Definitions:
@@ -5,7 +9,6 @@
  *  MessageSender: contains a "sendMessage(message, callback)" that will send the message 
  *  StoreSubscription: contains a "wrapStore(store)" function that subscribes to changes in the store
  **/
-
 
 
 // MessageListener implementations
@@ -124,13 +127,13 @@ export class WindowPostMessageSender {
 
 
 /**
- * currys the sender function into a function that can actually send the state
+ * currys the store and sender function into a function that builds the message to be send and calls the sender
  */
-const setupSendState = (sender) => {
-    return (state) => {
+const setupSendState = (store, sender) => {
+    return () => {
       sender({
         type: STATE_TYPE,
-        payload: state
+        payload: store.getState()
       });
     };
 }
@@ -145,7 +148,7 @@ const portNameFilterConnectState = (portName, store) => {
     }
 
     // Send new state down connected port on every redux store state change
-    const sendState = setupSendState(port.postMessage);
+    const sendState = setupSendState(store, port.postMessage.bind(port));
     const unsubscribe = store.subscribe(sendState);
 
     // when the port disconnects, unsubscribe the sendState listener
@@ -195,7 +198,7 @@ export class RuntimeExternalPortStoreSubscription {
      * Setup extended external connection 
      */
     if (chrome.runtime.onConnectExternal) {
-      chrome.runtime.onConnectExternal.addListener(connectState);
+      chrome.runtime.onConnectExternal.addListener(portNameFilterConnectState(this.portName, store));
     } else {
       console.warn('runtime.onConnectExternal is not supported');
     }
@@ -217,7 +220,8 @@ export class WindowPostMessageStoreSubscription {
   }
 
   wrapStore(store) {
-    store.subscribe(setupSendState(message => this.targetWindow.postMessage(message, this.targetOrigin)));
+    const sendState = setupSendState(store, message => this.targetWindow.postMessage(message, this.targetOrigin));
+    store.subscribe(sendState);
   }
 }
 

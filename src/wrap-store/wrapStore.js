@@ -3,14 +3,7 @@ import {
   STATE_TYPE
 } from '../constants';
 
-import {
-  CombiningDispatchListener, 
-  RuntimeOnMessageDispatchListener, 
-  RuntimeOnMessageExternalDispatchListener, 
-  CombiningStoreSubscription,
-  RuntimePortStoreSubscription,
-  RuntimeExternalPortStoreSubscription
-} from '../message-passing/messagePassing';
+import * as messagePassing from '../message-passing/messagePassing';
 
 /**
  * Responder for promisified results
@@ -45,20 +38,20 @@ export default (store, {
 
   // set dispatchListeners if not provided
   if (!dispatchListener) {
-    dispatchListener = new CombiningMessageListener({
+    dispatchListener = new messagePassing.CombiningMessageListener({
       listeners: [
-        new RuntimeOnMessageListener(), 
-        new RuntimeOnMessageExternalListener()
+        new messagePassing.RuntimeOnMessageListener(), 
+        new messagePassing.RuntimeOnMessageExternalListener()
       ]
     });
   }
 
   // set storeSubscription if not provided
   if (!storeSubscription) {
-    storeSubscription = new CombiningStoreSubscription({
+    storeSubscription = new messagePassing.CombiningStoreSubscription({
       subscriptions: [
-        new RuntimePortStoreSubscription({portName}),
-        new RuntimeExternalPortStoreSubscription({portName})
+        new messagePassing.RuntimePortStoreSubscription({portName}),
+        new messagePassing.RuntimeExternalPortStoreSubscription({portName})
       ]
     });
   }
@@ -91,14 +84,10 @@ export default (store, {
     }
   };
 
-  
-
   /**
    * Setup dispatch handler
    */
   dispatchListener.addListener(dispatchResponse);
 
-  storeSubscription.wrapStore({ 
-    subscribe: callback => store.subscribe(() => callback(store.getState()))
-  });
+  storeSubscription.wrapStore(store);
 };

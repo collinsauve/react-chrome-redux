@@ -5,7 +5,7 @@ import {
   STATE_TYPE
 } from '../constants';
 
-import {RuntimePortMessageListener, RuntimeSendMessageSender} from '../message-passing/messagePassing';
+import * as messagePassing from '../message-passing/messagePassing';
 
 const backgroundErrPrefix = '\nLooks like there is an error in the background page. ' +
   'You might want to inspect your background page for more details.\n';
@@ -19,12 +19,12 @@ class Store {
 
     // set stateListener if not provided
     if (!stateListener) {
-      stateListener = new RuntimePortMessageListener({portName, extensionId});
+      stateListener = new messagePassing.RuntimePortMessageListener({portName, extensionId});
     }
 
     // set dispatchSender if not provided
     if (!dispatchSender) {
-      dispatchSender = new RuntimeSendMessageSender({extensionId});
+      dispatchSender = new messagePassing.RuntimeSendMessageSender({extensionId});
     }
     this.dispatchSender = dispatchSender;
 
@@ -48,6 +48,7 @@ class Store {
     });
 
     this.dispatch = this.dispatch.bind(this); //add this context to dispatch
+    this.replaceState = this.replaceState.bind(this);
   }
 
   /**
