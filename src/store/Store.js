@@ -11,7 +11,7 @@ const backgroundErrPrefix = '\nLooks like there is an error in the background pa
 class Store {
   /**
    * Creates a new Proxy store
-   * @param  {object} options An object of form {portName, state, extensionId}, where `portName` is a required string and defines the name of the port for state transition changes, `state` is the initial state of this store (default `{}`) `extensionId` is the extension id as defined by chrome when extension is loaded (default `''`)
+   * @param  {object} options An object of form {portName, state, extensionId}, where `portName` is a required string and defines the name of the port for state transition changes, `state` is the initial state of this store (default `{}`) `extensionId` is the extension id as defined by the browser when extension is loaded (default `''`)
    */
   constructor({portName, state = {}, extensionId = ''}) {
     if (!portName) {
@@ -23,7 +23,7 @@ class Store {
     this.readyPromise = new Promise(resolve => this.readyResolve = resolve);
 
     this.extensionId = extensionId; // keep the extensionId as an instance variable
-    this.port = chrome.runtime.connect(this.extensionId, {name: portName});
+    this.port = browser.runtime.connect(this.extensionId, {name: portName});
     this.listeners = [];
     this.state = state;
 
@@ -92,23 +92,25 @@ class Store {
    */
   dispatch(data) {
     return new Promise((resolve, reject) => {
-      chrome.runtime.sendMessage(
+      browser.runtime.sendMessage(
         this.extensionId,
         {
           type: DISPATCH_TYPE,
           portName: this.portName,
           payload: data
-        }, (resp) => {
-          const {error, value} = resp;
+        }
+      )
+      .then((resp) => {
+        const {error, value} = resp;
 
-          if (error) {
-            const bgErr = new Error(`${backgroundErrPrefix}${error}`);
+        if (error) {
+          const bgErr = new Error(`${backgroundErrPrefix}${error}`);
 
-            reject(assignIn(bgErr, error));
-          } else {
-            resolve(value && value.payload);
-          }
-        });
+          reject(assignIn(bgErr, error));
+        } else {
+          resolve(value && value.payload);
+        }
+      });
     });
   }
 }

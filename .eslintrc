@@ -7,7 +7,7 @@
     "jquery": true
   },
   "globals": {
-    "chrome": true
+    "browser": true
   },
   "parser": "babel-eslint",
   "rules": {

@@ -9,8 +9,8 @@ describe('wrapStore', function () {
   const portName = 'test';
 
   beforeEach(function () {
-    // Mock chrome.runtime API
-    global.chrome = {
+    // Mock browser.runtime API
+    global.browser = {
       runtime: {
         onMessage: {
           addListener: () => {},
@@ -36,7 +36,7 @@ describe('wrapStore', function () {
       onConnectExternal: [],
     };
 
-    global.chrome = {
+    global.browser = {
       runtime: {
         onMessage: {
           addListener: fn => listeners.onMessage.push(fn),

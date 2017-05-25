@@ -10,8 +10,8 @@ describe('Store', function () {
   const portName = 'test';
 
   beforeEach(function () {
-    // Mock chrome.runtime API
-    global.chrome = {
+    // Mock browser.runtime API
+    global.browser = {
       runtime: {
         connect() {
           return {
@@ -29,12 +29,12 @@ describe('Store', function () {
   });
 
   describe('#new Store()', function () {
-    it('should setup a listener on the chrome port defined by the portName option and call replaceState on new state messages', function () {
+    it('should setup a listener on the port defined by the portName option and call replaceState on new state messages', function () {
       // mock connect.onMessage listeners array
       const listeners = [];
 
-      // override mock chrome API for this test
-      global.chrome.runtime.connect = () => {
+      // override mock browser API for this test
+      global.browser.runtime.connect = () => {
         return {
           onMessage: {
             addListener: listener => {
@@ -91,8 +91,8 @@ describe('Store', function () {
       // mock connect.onMessage listeners array
       const listeners = [];
 
-      // override mock chrome API for this test
-      global.chrome.runtime.connect = () => {
+      // override mock browser API for this test
+      global.browser.runtime.connect = () => {
         return {
           onMessage: {
             addListener(listener) {
@@ -208,7 +208,7 @@ describe('Store', function () {
 
   describe('#dispatch()', function () {
     it('should send a message with the correct dispatch type and payload given an extensionId', function () {
-      const spy = global.chrome.runtime.sendMessage = sinon.spy(),
+      const spy = global.browser.runtime.sendMessage = sinon.spy(),
             store = new Store({portName, extensionId: 'xxxxxxxxxxxx'});
 
       store.dispatch({a: 'a'});
@@ -222,7 +222,7 @@ describe('Store', function () {
     });
 
     it('should send a message with the correct dispatch type and payload not given an extensionId', function () {
-      const spy = global.chrome.runtime.sendMessage = sinon.spy(),
+      const spy = global.browser.runtime.sendMessage = sinon.spy(),
             store = new Store({portName});
 
       store.dispatch({a: 'a'});
@@ -236,8 +236,8 @@ describe('Store', function () {
     });
 
     it('should return a promise that resolves with successful action', function () {
-      global.chrome.runtime.sendMessage = (extensionId, data, cb) => {
-        cb({value: {payload: 'hello'}});
+      global.browser.runtime.sendMessage = () => {
+        return Promise.resolve({value: {payload: 'hello'}});
       };
 
       const store = new Store({portName}),
@@ -247,8 +247,8 @@ describe('Store', function () {
     });
 
     it('should return a promise that rejects with an action error', function () {
-      global.chrome.runtime.sendMessage = (extensionId, data, cb) => {
-        cb({value: {payload: 'hello'}, error: {extraMsg: 'test'}});
+      global.browser.runtime.sendMessage = () => {
+        return Promise.resolve({value: {payload: 'hello'}, error: {extraMsg: 'test'}});
       };
 
       const store = new Store({portName}),
@@ -264,8 +264,8 @@ describe('Store', function () {
     });
 
     it('should return a promise that resolves with undefined for an undefined return value', function () {
-      global.chrome.runtime.sendMessage = (extensionId, data, cb) => {
-        cb({value: undefined});
+      global.browser.runtime.sendMessage = () => {
+        return Promise.resolve({value: undefined});
       };
 
       const store = new Store({portName}),
