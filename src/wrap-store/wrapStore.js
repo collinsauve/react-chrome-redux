@@ -1,3 +1,5 @@
+import browser from 'webextension-polyfill';
+
 import {
   DISPATCH_TYPE,
   STATE_TYPE

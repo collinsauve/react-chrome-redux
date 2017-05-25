@@ -20,7 +20,8 @@
   },
   "homepage": "https://github.com/tshaddix/react-chrome-redux#readme",
   "dependencies": {
-    "lodash": "^4.5.1"
+    "lodash": "^4.5.1",
+    "webextension-polyfill": "git+ssh://git@github.com:collinsauve/webextension-polyfill.git#csauve-publish2"
   },
   "devDependencies": {
     "babel": "^6.3.26",

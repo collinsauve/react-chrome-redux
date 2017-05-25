@@ -6,9 +6,6 @@
     "commonjs": true,
     "jquery": true
   },
-  "globals": {
-    "browser": true
-  },
   "parser": "babel-eslint",
   "rules": {
     "arrow-spacing": "error",
